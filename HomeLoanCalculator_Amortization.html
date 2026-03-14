@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loan Amortization Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14; --surface:#161a23; --surface2:#1e2330; --surface3:#252b3b;
+  --border:#2a3147; --border-light:#363f5a;
+  --accent:#4f8ef7; --accent2:#7b5ea7; --accent3:#38c9a0;
+  --warn:#f0a953; --danger:#e85d75;
+  --text:#e8ecf4; --text2:#8b95b0; --text3:#5a6480;
+  --radius:12px; --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;}
+
+.header{background:linear-gradient(135deg,#0d1420,#131828,#0f1620);border-bottom:1px solid var(--border);
+  padding:14px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+.header-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.header h1{font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);}
+.header h1 span{color:var(--accent);}
+.save-bar{display:flex;align-items:center;gap:7px;padding:5px 11px;background:rgba(56,201,160,.07);
+  border:1px solid rgba(56,201,160,.2);border-radius:var(--radius-sm);font-size:11px;
+  color:var(--accent3);font-family:'DM Mono',monospace;}
+.save-bar .dot{width:6px;height:6px;border-radius:50%;background:var(--accent3);
+  animation:pulse 2s infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.save-bar.unsaved{background:rgba(240,169,83,.07);border-color:rgba(240,169,83,.2);color:var(--warn);}
+.save-bar.unsaved .dot{background:var(--warn);}
+.reset-btn{background:transparent;border:1px solid var(--border);color:var(--text3);
+  border-radius:var(--radius-sm);padding:5px 10px;font-size:11px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .15s;}
+.reset-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+.main{display:flex;height:calc(100vh - 61px);}
+.sidebar{width:420px;min-width:420px;background:var(--surface);border-right:1px solid var(--border);
+  overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:11px;}
+.content{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:12px;}
+
+.card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.card-header{display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--surface3);
+  border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+.card-header:hover{background:#2d3548;}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);flex:1;}
+.card-badge{font-size:10px;font-family:'DM Mono',monospace;background:var(--surface);
+  border:1px solid var(--border);padding:2px 7px;border-radius:20px;color:var(--text3);}
+.card-badge.active{background:rgba(79,142,247,.15);border-color:var(--accent);color:var(--accent);}
+.card-body{padding:12px 14px;}
+.card-collapsed .card-body{display:none;}
+.collapse-icon{color:var(--text3);font-size:11px;transition:transform .2s;}
+.card-collapsed .collapse-icon{transform:rotate(-90deg);}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.form-row.single{grid-template-columns:1fr;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.form-input{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);padding:7px 9px;font-family:'DM Mono',monospace;font-size:12px;
+  outline:none;transition:border-color .15s,box-shadow .15s;width:100%;}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,142,247,.12);}
+.form-input::placeholder{color:var(--text3);}
+select.form-input{cursor:pointer;}
+
+.toggle-group{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:9px;}
+.toggle-opt{flex:1;padding:7px 8px;text-align:center;font-size:11px;font-weight:600;cursor:pointer;
+  background:var(--surface);color:var(--text3);border:none;font-family:'DM Sans',sans-serif;
+  transition:all .15s;line-height:1.4;}
+.toggle-opt.active{background:var(--accent);color:#fff;}
+.toggle-opt:hover:not(.active){background:var(--surface3);color:var(--text2);}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 12px;
+  border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
+  cursor:pointer;border:none;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#6fa0ff;transform:translateY(-1px);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:rgba(232,93,117,.15);border:1px solid rgba(232,93,117,.3);color:var(--danger);}
+.btn-danger:hover{background:rgba(232,93,117,.25);}
+.btn-sm{padding:4px 9px;font-size:11px;}
+.btn-full{width:100%;}
+.btn-calc{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:11px;
+  font-size:13px;letter-spacing:.04em;box-shadow:0 4px 20px rgba(79,142,247,.28);}
+.btn-calc:hover{box-shadow:0 6px 26px rgba(79,142,247,.42);transform:translateY(-2px);}
+
+.event-list{display:flex;flex-direction:column;gap:6px;}
+.event-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:8px 10px;display:flex;align-items:center;gap:8px;position:relative;}
+.event-item::before{content:'';width:3px;position:absolute;left:0;top:0;bottom:0;border-radius:3px 0 0 3px;}
+.event-item.disbursement::before{background:var(--accent);}
+.event-item.rate-revision::before{background:var(--warn);}
+.event-item.advance-payment::before{background:var(--accent3);}
+.event-icon{font-size:14px;width:24px;text-align:center;flex-shrink:0;}
+.event-info{flex:1;min-width:0;}
+.event-title{font-size:11px;font-weight:600;color:var(--text);}
+.event-detail{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px;}
+.add-event-row{display:flex;gap:7px;}
+.add-event-select{flex:1;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--text2);padding:6px 9px;font-size:12px;outline:none;}
+
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
+.summary-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:11px 13px;position:relative;overflow:hidden;}
+.summary-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.summary-card.blue::after{background:var(--accent);}
+.summary-card.purple::after{background:var(--accent2);}
+.summary-card.green::after{background:var(--accent3);}
+.summary-card.orange::after{background:var(--warn);}
+.summary-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:600;margin-bottom:5px;}
+.summary-value{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--text);}
+.summary-sub{font-size:10px;color:var(--text3);margin-top:3px;font-family:'DM Mono',monospace;}
+
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:11px;}
+thead th{background:var(--surface3);color:var(--text3);text-transform:uppercase;font-size:9px;
+  letter-spacing:.06em;font-weight:700;padding:8px 10px;text-align:right;white-space:nowrap;
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;font-family:'DM Sans',sans-serif;}
+thead th:first-child{text-align:center;}
+thead th:nth-child(2){text-align:left;}
+thead th:nth-child(3){text-align:left;}
+thead tr.grp th{background:#11141d;font-size:8.5px;padding:4px 10px;border-bottom:none;
+  color:transparent;font-family:'DM Sans',sans-serif;font-weight:700;letter-spacing:.05em;}
+thead tr.grp th.g-acc{color:var(--warn);border-bottom:2px solid rgba(240,169,83,.4);text-align:center;}
+thead tr.grp th.g-pay{color:var(--accent);border-bottom:2px solid rgba(79,142,247,.4);text-align:center;}
+thead tr.grp th.g-run{color:var(--accent3);border-bottom:2px solid rgba(56,201,160,.35);text-align:center;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .08s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,.025);}
+tbody tr.row-disb{background:rgba(79,142,247,.04);}
+tbody tr.row-acc{background:rgba(240,169,83,.05);}
+tbody tr.row-emi{background:transparent;}
+tbody tr.row-rate{background:rgba(240,169,83,.08);}
+tbody tr.row-adv{background:rgba(56,201,160,.05);}
+td{padding:6px 10px;text-align:right;color:var(--text2);white-space:nowrap;}
+td:first-child{text-align:center;color:var(--text3);font-size:10px;}
+td:nth-child(2){text-align:left;}
+td:nth-child(3){text-align:left;}
+td.hi{color:var(--text);font-weight:500;}
+td.pos{color:var(--accent3);}
+td.wc{color:var(--warn);}
+td.ac{color:var(--accent);}
+td.cum{color:var(--text3);font-size:10.5px;font-style:italic;}
+td.dash{color:var(--border-light);}
+
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;padding:2px 7px;
+  border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:700;white-space:nowrap;}
+.b-disb{background:rgba(79,142,247,.14);color:var(--accent);}
+.b-rate{background:rgba(240,169,83,.14);color:var(--warn);}
+.b-adv{background:rgba(56,201,160,.14);color:var(--accent3);}
+.b-acc{background:rgba(240,169,83,.1);color:#d4903a;}
+.b-emi{background:rgba(123,94,167,.15);color:#a88fd4;}
+.b-final{background:rgba(56,201,160,.18);color:var(--accent3);}
+
+.info-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;
+  border-bottom:1px solid var(--border);font-size:11px;}
+.info-row:last-child{border-bottom:none;}
+.info-key{color:var(--text3);}
+.info-val{color:var(--text);font-family:'DM Mono',monospace;}
+
+.tabs{display:flex;gap:3px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:3px;}
+.tab{flex:1;padding:6px 8px;border-radius:var(--radius-sm);text-align:center;font-size:11.5px;
+  font-weight:600;cursor:pointer;color:var(--text3);transition:all .15s;border:none;background:transparent;}
+.tab:hover{color:var(--text2);}
+.tab.active{background:var(--surface3);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3);}
+
+.chart-container{position:relative;height:195px;}
+.empty-state{text-align:center;padding:56px 20px;color:var(--text3);}
+.empty-icon{font-size:42px;margin-bottom:12px;opacity:.45;}
+.empty-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.empty-desc{font-size:12px;line-height:1.7;}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
+  z-index:200;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);
+  width:450px;max-width:calc(100vw - 32px);padding:20px;
+  transform:translateY(10px);transition:transform .2s;}
+.modal-overlay.show .modal{transform:translateY(0);}
+.modal-title{font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:13px;
+  padding-bottom:10px;border-bottom:1px solid var(--border);}
+.modal-actions{display:flex;gap:7px;margin-top:13px;justify-content:flex-end;}
+
+.note{padding:7px 10px;border-radius:var(--radius-sm);font-size:10.5px;margin-top:7px;line-height:1.5;}
+.note-warn{background:rgba(240,169,83,.08);border:1px solid rgba(240,169,83,.2);color:var(--warn);}
+.note-green{background:rgba(56,201,160,.08);border:1px solid rgba(56,201,160,.2);color:var(--accent3);}
+.note-blue{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);color:#7fb3ff;}
+.divider{border:none;border-top:1px solid var(--border);margin:4px 0;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--border-light);}
+
+@media(max-width:900px){
+  .main{flex-direction:column;height:auto;}
+  .sidebar{width:100%;min-width:0;}
+  .summary-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">📊</div>
+  <h1>Loan <span>Amortization</span> Calculator</h1>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:9px;">
+    <div class="save-bar" id="saveBar"><div class="dot"></div><span id="saveBarText">No saved data</span></div>
+    <button class="reset-btn" onclick="confirmReset()">↺ Reset All</button>
+  </div>
+</div>
+
+<div class="main">
+<div class="sidebar">
+
+  <div class="card" id="card-base">
+    <div class="card-header" onclick="toggleCard('card-base')">
+      <span>🏦</span><span class="card-title">Base Loan</span><span class="collapse-icon">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Principal Amount (₹)</label>
+          <input type="number" id="basePrincipal" class="form-input" placeholder="10,25,000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Interest Rate (% p.a.)</label>
+          <input type="number" id="baseRate" class="form-input" placeholder="8.7" step="0.01">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Disbursement Date</label>
+          <input type="date" id="startDate" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">First EMI Payment Date</label>
+          <input type="date" id="firstEMIDate" class="form-input">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">EMI Day (2nd EMI onwards)</label>
+          <input type="number" id="emiDay" class="form-input" placeholder="e.g. 5" min="1" max="28">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tenor (Months)</label>
+          <input type="number" id="tenor" class="form-input" placeholder="120" min="1">
+        </div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group">
+          <label class="form-label">Fixed EMI Amount (₹)</label>
+          <input type="number" id="fixedEMI" class="form-input" placeholder="Leave blank to auto-calculate">
+        </div>
+      </div>
+      <div class="note note-blue" style="margin-top:2px;">
+        ℹ Interest accrues on the <b>last day of every calendar month</b> (Actual/365) and is added to the outstanding balance. EMI repayment happens on the entered payment date — these are always two separate rows.
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-events">
+    <div class="card-header" onclick="toggleCard('card-events')">
+      <span>📅</span><span class="card-title">Events</span>
+      <span class="card-badge active" id="evBadge">0 events</span>
+      <span class="collapse-icon">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="event-list" id="eventList">
+        <div style="text-align:center;color:var(--text3);font-size:12px;padding:8px 0;">No events added yet</div>
+      </div>
+      <hr class="divider" style="margin:9px 0;">
+      <div class="add-event-row">
+        <select class="add-event-select" id="newEventType">
+          <option value="disbursement">💰 Additional Disbursement</option>
+          <option value="rate-revision">📈 Rate Revision</option>
+          <option value="advance-payment">⚡ Advance Payment</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="openModal()">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-calc btn-full" onclick="calculate()">⚙ Calculate Amortization</button>
+
+  <div class="card" id="card-info" style="display:none">
+    <div class="card-header" onclick="toggleCard('card-info')">
+      <span>📋</span><span class="card-title">Loan Summary</span><span class="collapse-icon">▾</span>
+    </div>
+    <div class="card-body" id="loanInfoBody"></div>
+  </div>
+
+</div><!-- /sidebar -->
+
+<div class="content">
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">📊</div>
+    <div class="empty-title">Configure &amp; Calculate</div>
+    <div class="empty-desc">Fill in loan details on the left,<br>add events, then click <b>Calculate Amortization</b>.</div>
+  </div>
+
+  <div id="resultsArea" style="display:none">
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('schedule',this)">Amortization Schedule</button>
+      <button class="tab" onclick="switchTab('chart',this)">Charts</button>
+      <button class="tab" onclick="switchTab('events',this)">Event Summary</button>
+    </div>
+
+    <div id="tab-schedule">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+        <div style="font-size:10.5px;color:var(--text3);" id="scheduleInfo"></div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+          <button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Print</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr class="grp">
+              <th colspan="3"></th>
+              <th colspan="3" class="g-acc">── Interest Accrual (Month-End) ──</th>
+              <th colspan="3" class="g-pay">── EMI / Repayment ──</th>
+              <th colspan="2" class="g-run">── Running Totals ──</th>
+              <th colspan="2"></th>
+            </tr>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Row Type</th>
+              <th>Opening Balance</th>
+              <th>Days</th>
+              <th>Interest Accrued</th>
+              <th>Bal After Interest</th>
+              <th>EMI / Payment</th>
+              <th>Interest Component</th>
+              <th>Principal Component</th>
+              <th>Cumul. Interest</th>
+              <th>Cumul. Principal</th>
+              <th>Closing Balance</th>
+              <th>Rate %</th>
+            </tr>
+          </thead>
+          <tbody id="scheduleBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-chart" style="display:none">
+      <div class="card">
+        <div class="card-header"><span>📊</span><span class="card-title">Principal vs Interest per EMI</span></div>
+        <div class="card-body"><div class="chart-container"><canvas id="chartBreakdown"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-top:9px">
+        <div class="card-header"><span>📉</span><span class="card-title">Outstanding Balance Over Time</span></div>
+        <div class="card-body"><div class="chart-container"><canvas id="chartBalance"></canvas></div></div>
+      </div>
+    </div>
+
+    <div id="tab-events" style="display:none">
+      <div id="eventsTabBody"></div>
+    </div>
+  </div>
+</div><!-- /content -->
+</div><!-- /main -->
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Add Event</div>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmEvent()">Add Event</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════════
+let events       = [];
+let scheduleData = [];
+let chartB = null, chartL = null;
+const SK   = 'loan_amort_v4';
+let saveTimer = null;
+
+// ═══════════════════════════════════════════════════════════════════
+//  PERSISTENCE
+// ═══════════════════════════════════════════════════════════════════
+function gv(id){ return document.getElementById(id).value; }
+function sv(id, v){ if(v != null) document.getElementById(id).value = v; }
+
+function collectForm(){
+  return {
+    basePrincipal : gv('basePrincipal'),
+    baseRate      : gv('baseRate'),
+    startDate     : gv('startDate'),
+    firstEMIDate  : gv('firstEMIDate'),
+    emiDay        : gv('emiDay'),
+    tenor         : gv('tenor'),
+    fixedEMI      : gv('fixedEMI'),
+  };
+}
+function applyForm(d){
+  if(!d) return;
+  sv('basePrincipal', d.basePrincipal); sv('baseRate',     d.baseRate);
+  sv('startDate',     d.startDate);     sv('firstEMIDate', d.firstEMIDate);
+  sv('emiDay',        d.emiDay);        sv('tenor',        d.tenor);
+  sv('fixedEMI',      d.fixedEMI);
+}
+function saveTo(){
+  try{
+    localStorage.setItem(SK, JSON.stringify({form:collectForm(), events, savedAt:new Date().toISOString()}));
+    setSaveBar('saved');
+  }catch(e){ setSaveBar('error'); }
+}
+function loadFrom(){
+  try{
+    const raw = localStorage.getItem(SK);
+    if(!raw) return false;
+    const p = JSON.parse(raw);
+    applyForm(p.form);
+    events = Array.isArray(p.events) ? p.events : [];
+    renderEventList();
+    if(p.savedAt) setSaveBar('saved','Last saved '+fmtAgo(new Date(p.savedAt)));
+    return true;
+  }catch(e){ return false; }
+}
+function setSaveBar(state, txt){
+  const bar = document.getElementById('saveBar');
+  const sp  = document.getElementById('saveBarText');
+  const m = {
+    saved  : ['save-bar',         txt||'All changes saved'],
+    saving : ['save-bar unsaved', 'Saving…'],
+    unsaved: ['save-bar unsaved', 'Unsaved changes'],
+    error  : ['save-bar unsaved', 'Storage unavailable'],
+    fresh  : ['save-bar unsaved', 'No saved data yet'],
+  };
+  const [cls,label] = m[state]||m.saved;
+  bar.className = cls; sp.textContent = label;
+}
+function fmtAgo(d){
+  const s = Math.round((Date.now()-d)/1000);
+  if(s<60)    return 'just now';
+  if(s<3600)  return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return fmtDate(d);
+}
+function autoSave(){
+  setSaveBar('unsaved'); clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{ setSaveBar('saving'); setTimeout(saveTo,200); },800);
+}
+function confirmReset(){
+  if(!confirm('Reset everything? Cannot be undone.')) return;
+  localStorage.removeItem(SK);
+  events=[]; scheduleData=[];
+  ['basePrincipal','baseRate','startDate','firstEMIDate','emiDay','tenor','fixedEMI']
+    .forEach(id=>document.getElementById(id).value='');
+  renderEventList();
+  document.getElementById('emptyState').style.display='';
+  document.getElementById('resultsArea').style.display='none';
+  document.getElementById('card-info').style.display='none';
+  setSaveBar('fresh');
+}
+
+window.onload = ()=>{
+  const loaded = loadFrom();
+  if(!loaded) setSaveBar('fresh');
+  ['basePrincipal','baseRate','startDate','firstEMIDate','emiDay','tenor','fixedEMI']
+    .forEach(id=>{
+      document.getElementById(id).addEventListener('input',  autoSave);
+      document.getElementById(id).addEventListener('change', autoSave);
+    });
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  DATE / NUMBER HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function parseDate(s){
+  if(!s) return null;
+  const p = s.split('-');
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+function toISO(d){ return d.toISOString().split('T')[0]; }
+
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+function fmtDate(d){
+  if(!d) return '';
+  return String(d.getDate()).padStart(2,'0')+'-'+MONTHS[d.getMonth()]+'-'+d.getFullYear();
+}
+function fmtINR(n){
+  if(n==null||isNaN(n)) return '₹0.00';
+  return (n<0?'-':'')+'₹'+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtINRs(n){
+  if(Math.abs(n)>=1e7) return '₹'+(n/1e7).toFixed(2)+' Cr';
+  if(Math.abs(n)>=1e5) return '₹'+(n/1e5).toFixed(2)+' L';
+  return fmtINR(n);
+}
+// Last calendar day of the month containing d
+function lastDayOfMonth(d){
+  return new Date(d.getFullYear(), d.getMonth()+1, 0);
+}
+// Days between two dates
+function daysBetween(a, b){ return Math.round((b-a)/86400000); }
+// Date equality (same calendar day)
+function sameDay(a, b){
+  return a.getFullYear()===b.getFullYear() &&
+         a.getMonth()===b.getMonth() &&
+         a.getDate()===b.getDate();
+}
+// Add one calendar month
+function addMonth(d){
+  const x = new Date(d.getFullYear(), d.getMonth()+1, d.getDate());
+  return x;
+}
+function calcEMI(P, r, n){
+  const m = r/100/12;
+  if(m===0) return P/n;
+  return P*m*Math.pow(1+m,n)/(Math.pow(1+m,n)-1);
+}
+function calcTenor(P, r, emi){
+  const m = r/100/12;
+  if(m===0) return Math.ceil(P/emi);
+  if(emi<=P*m) return Infinity;
+  return Math.ceil(Math.log(emi/(emi-P*m))/Math.log(1+m));
+}
+function toggleCard(id){ document.getElementById(id).classList.toggle('card-collapsed'); }
+
+// ═══════════════════════════════════════════════════════════════════
+//  EVENT LIST UI
+// ═══════════════════════════════════════════════════════════════════
+function renderEventList(){
+  const list  = document.getElementById('eventList');
+  const badge = document.getElementById('evBadge');
+  badge.textContent = events.length+' event'+(events.length!==1?'s':'');
+  badge.className = 'card-badge'+(events.length>0?' active':'');
+  if(!events.length){
+    list.innerHTML='<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px 0;">No events added yet</div>';
+    return;
+  }
+  const icons  = {disbursement:'💰','rate-revision':'📈','advance-payment':'⚡'};
+  const labels = {disbursement:'Disbursement','rate-revision':'Rate Revision','advance-payment':'Advance Payment'};
+  list.innerHTML = [...events]
+    .sort((a,b)=>new Date(a.date)-new Date(b.date))
+    .map(ev=>{
+      const i = events.indexOf(ev);
+      let det = ev.type==='rate-revision'
+        ? 'Rate: '+ev.rate+'%'+(ev.revisionMode==='change-emi'?' · EMI: '+fmtINR(ev.newEMI):' · Tenor adjusts')
+        : fmtINR(ev.amount);
+      return '<div class="event-item '+ev.type+'">'+
+        '<div class="event-icon">'+icons[ev.type]+'</div>'+
+        '<div class="event-info">'+
+          '<div class="event-title">'+labels[ev.type]+'</div>'+
+          '<div class="event-detail">'+fmtDate(parseDate(ev.date))+' · '+det+'</div>'+
+        '</div>'+
+        '<button class="btn btn-danger btn-sm" onclick="removeEvent('+i+')">✕</button>'+
+      '</div>';
+    }).join('');
+}
+function removeEvent(i){ events.splice(i,1); renderEventList(); autoSave(); }
+
+// ═══════════════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════════════
+let curModalType = '';
+let rrMode = 'change-tenor';
+
+function openModal(){
+  curModalType = gv('newEventType');
+  rrMode = 'change-tenor';
+  const titles = {
+    disbursement    :'💰 Add Disbursement',
+    'rate-revision' :'📈 Add Rate Revision',
+    'advance-payment':'⚡ Add Advance Payment'
+  };
+  document.getElementById('modalTitle').textContent = titles[curModalType];
+
+  let body = '<div class="form-row single"><div class="form-group">'+
+    '<label class="form-label">Date</label>'+
+    '<input type="date" id="evDate" class="form-input" value="'+toISO(new Date())+'">'+
+    '</div></div>';
+
+  if(curModalType==='disbursement'){
+    body += '<div class="form-row single"><div class="form-group">'+
+      '<label class="form-label">Amount (₹)</label>'+
+      '<input type="number" id="evAmount" class="form-input" placeholder="500000">'+
+      '</div></div>';
+  } else if(curModalType==='rate-revision'){
+    body +=
+      '<div class="form-row single"><div class="form-group">'+
+        '<label class="form-label">New Interest Rate (% p.a.)</label>'+
+        '<input type="number" id="evRate" class="form-input" placeholder="9.5" step="0.01">'+
+      '</div></div>'+
+      '<div class="form-group" style="margin-bottom:9px;">'+
+        '<label class="form-label" style="margin-bottom:5px;">What does the bank change?</label>'+
+        '<div class="toggle-group">'+
+          '<button class="toggle-opt active" id="rrTenorBtn" onclick="setRRMode(\'change-tenor\')">'+
+            '📅 Tenor Changes<br><span style="font-size:9px;font-weight:400;opacity:.75;">EMI stays fixed</span>'+
+          '</button>'+
+          '<button class="toggle-opt" id="rrEMIBtn" onclick="setRRMode(\'change-emi\')">'+
+            '💳 EMI Changes<br><span style="font-size:9px;font-weight:400;opacity:.75;">Tenor stays fixed</span>'+
+          '</button>'+
+        '</div>'+
+      '</div>'+
+      '<div id="rrTenorNote" class="note note-warn">⚠ EMI stays fixed. Remaining tenor recalculates at new rate.</div>'+
+      '<div id="rrEMISection" style="display:none;">'+
+        '<div class="form-row single"><div class="form-group">'+
+          '<label class="form-label">New EMI Amount (₹) — from bank letter</label>'+
+          '<input type="number" id="evNewEMI" class="form-input" placeholder="Enter new EMI">'+
+        '</div></div>'+
+        '<div class="note note-green">✓ Tenor stays fixed. New EMI applies from this date.</div>'+
+      '</div>';
+  } else if(curModalType==='advance-payment'){
+    body +=
+      '<div class="form-row single"><div class="form-group">'+
+        '<label class="form-label">Amount (₹)</label>'+
+        '<input type="number" id="evAmount" class="form-input" placeholder="100000">'+
+      '</div></div>'+
+      '<div class="note note-green">✓ EMI stays fixed. Only tenor reduces.</div>';
+  }
+
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function setRRMode(mode){
+  rrMode = mode;
+  document.getElementById('rrTenorBtn').classList.toggle('active', mode==='change-tenor');
+  document.getElementById('rrEMIBtn').classList.toggle('active',   mode==='change-emi');
+  document.getElementById('rrTenorNote').style.display  = mode==='change-tenor'?'':'none';
+  document.getElementById('rrEMISection').style.display = mode==='change-emi'?'':'none';
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+function confirmEvent(){
+  const dateVal = document.getElementById('evDate') && document.getElementById('evDate').value;
+  if(!dateVal){ alert('Please select a date.'); return; }
+  const ev = {type:curModalType, date:dateVal};
+  if(curModalType==='disbursement'||curModalType==='advance-payment'){
+    const amt = parseFloat(document.getElementById('evAmount').value);
+    if(!amt||amt<=0){ alert('Enter a valid amount.'); return; }
+    ev.amount = amt;
+  } else if(curModalType==='rate-revision'){
+    const rate = parseFloat(document.getElementById('evRate').value);
+    if(!rate||rate<=0){ alert('Enter a valid rate.'); return; }
+    ev.rate = rate; ev.revisionMode = rrMode;
+    if(rrMode==='change-emi'){
+      const newEMI = parseFloat(document.getElementById('evNewEMI').value);
+      if(!newEMI||newEMI<=0){ alert('Enter the new EMI amount.'); return; }
+      ev.newEMI = newEMI;
+    }
+  }
+  events.push(ev); renderEventList(); autoSave(); closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CORE CALCULATION ENGINE
+//
+//  APPROVED BANK LOGIC:
+//
+//  ACCRUAL TIMELINE (independent):
+//    Every month-end (last day of month) interest accrues on outstanding
+//    balance and is ADDED to it. Uses Actual/365.
+//    accrualPot accumulates all unpaid interest.
+//
+//  EMI TIMELINE (independent):
+//    First EMI = user-entered date (may cover multiple months of accrual)
+//    Subsequent EMIs = emiDay of each following month
+//    EMI interest component = entire accrualPot at time of payment
+//    EMI principal component = EMI - accrualPot
+//    accrualPot resets to 0 after each EMI
+//
+//  Both timelines are merged chronologically.
+//  On same date: disbursement/rate/advance → accrual → EMI (in that order)
+//
+//  Example: disbursement 31-MAR, first EMI 05-MAY:
+//    31-MAR  Accrual(Mar,1day)   pot = 244.32
+//    30-APR  Accrual(Apr,30days) pot = 244.32 + AprilInt
+//    05-MAY  EMI#1               intComp = full pot, prin = EMI - pot, pot = 0
+//    31-MAY  Accrual(May,31days) pot = MayInt
+//    05-JUN  EMI#2               intComp = MayInt, prin = EMI - MayInt
+// ═══════════════════════════════════════════════════════════════════
+function calculate(){
+  const basePrincipal = parseFloat(gv('basePrincipal'));
+  const baseRate      = parseFloat(gv('baseRate'));
+  const startDateVal  = gv('startDate');
+  const firstEMIVal   = gv('firstEMIDate');
+  const emiDay        = parseInt(gv('emiDay'));
+  const tenor         = parseInt(gv('tenor'));
+  const fixedEMIInput = parseFloat(gv('fixedEMI'));
+
+  if(!basePrincipal||isNaN(basePrincipal)||basePrincipal<=0) return alert('Enter a valid principal amount.');
+  if(!baseRate||isNaN(baseRate)||baseRate<=0)                return alert('Enter a valid interest rate.');
+  if(!startDateVal)                                          return alert('Enter the disbursement date.');
+  if(!firstEMIVal)                                           return alert('Enter the first EMI payment date.');
+  if(!emiDay||emiDay<1||emiDay>28)                           return alert('Enter EMI day between 1 and 28.');
+  if(!tenor||tenor<1)                                        return alert('Enter a valid tenor (months).');
+
+  const disbDate = parseDate(startDateVal);
+  const firstEMI = parseDate(firstEMIVal);
+
+  if(firstEMI <= disbDate) return alert('First EMI date must be after the disbursement date.');
+
+  let baseEMI = (fixedEMIInput>0) ? fixedEMIInput : calcEMI(basePrincipal, baseRate, tenor);
+  document.getElementById('fixedEMI').value = baseEMI.toFixed(2);
+  autoSave();
+
+  const evQueue = [...events].sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  // ── Working state ──
+  let balance     = basePrincipal;
+  let currentRate = baseRate;
+  let currentEMI  = baseEMI;
+  let cumulInt    = 0;
+  let cumulPrin   = 0;
+  let emiCount    = 0;
+  let accrualPot  = 0;   // accumulated interest not yet paid by any EMI
+  let schedule    = [];
+  const MAXROWS   = 5000;
+
+  // ── Opening disbursement row ──
+  schedule.push(makeRow('-', disbDate, 'disbursement', 0, null, 0, basePrincipal,
+    0, 0, 0, 0, 0, basePrincipal, baseRate, 'Base Disbursement'));
+
+  // ── Build two independent event queues ──
+
+  // 1. ACCRUAL dates: last day of every month from disbursement month onwards
+  //    We generate them on the fly using accrualCursor
+  //    accrualCursor starts as disbDate, advances month by month
+  let accrualCursor = disbDate;          // current position in accrual timeline
+  let prevAccrualDate = disbDate;        // previous accrual point (for day counting)
+
+  // 2. EMI dates: firstEMI, then emiDay of each following month
+  let nextEMIDate = firstEMI;
+
+  // 3. User events queue
+  let pending = [...evQueue];
+
+  // ── Helper: get next accrual date from cursor ──
+  function nextAccrualDate(cursor){
+    return lastDayOfMonth(cursor);
+  }
+
+  let currentAccrualDate = nextAccrualDate(accrualCursor);
+
+  // ── Main loop: process events in chronological order ──
+  let safety = 0;
+  while(balance > 0.5 && schedule.length < MAXROWS && safety++ < 5000){
+
+    // Determine what comes next: accrual or EMI (or user event)
+    // Order on same date: user-events first, then accrual, then EMI
+
+    // Peek at next user event date
+    const nextUserEvDate = pending.length > 0 ? parseDate(pending[0].date) : null;
+
+    // Find the earliest of: next user event, next accrual, next EMI
+    // that is still in the future (> last processed date)
+    // We process strictly in order: user events → accrual → EMI per date
+
+    // Build a candidate list
+    let candidates = [];
+    if(nextUserEvDate) candidates.push({type:'user', date:nextUserEvDate});
+    candidates.push({type:'accrual', date:currentAccrualDate});
+    candidates.push({type:'emi', date:nextEMIDate});
+
+    // Sort candidates by date, with tie-breaking: user < accrual < emi
+    const typeOrder = {user:0, accrual:1, emi:2};
+    candidates.sort((a,b)=> a.date-b.date || typeOrder[a.type]-typeOrder[b.type]);
+
+    const next = candidates[0];
+
+    // ── PROCESS USER EVENT ──
+    if(next.type === 'user'){
+      const ev = pending.shift();
+      const evDate = parseDate(ev.date);
+
+      if(ev.type === 'disbursement'){
+        const ob = balance;
+        balance += ev.amount;
+        schedule.push(makeRow('-', evDate, 'disbursement', ob, null, 0, balance,
+          0, 0, 0, cumulInt, cumulPrin, balance, currentRate,
+          'Additional Disbursement · '+fmtINR(ev.amount)));
+
+      } else if(ev.type === 'advance-payment'){
+        const ob = balance;
+        balance = Math.max(0, balance - ev.amount);
+        cumulPrin += ev.amount;
+        const nt = balance>0 ? calcTenor(balance, currentRate, currentEMI) : 0;
+        schedule.push(makeRow('-', evDate, 'advance-payment', ob, null, 0, balance,
+          0, 0, ev.amount, cumulInt, cumulPrin, balance, currentRate,
+          'Advance Payment · New Tenor: '+(nt===Infinity?'∞':nt+' mths')));
+
+      } else if(ev.type === 'rate-revision'){
+        const oldRate = currentRate;
+        currentRate = ev.rate;
+        if(ev.revisionMode === 'change-emi') currentEMI = ev.newEMI;
+        const nt = calcTenor(balance, currentRate, currentEMI);
+        const note = ev.revisionMode === 'change-emi'
+          ? 'Rate: '+oldRate+'%→'+currentRate+'% | EMI→'+fmtINR(currentEMI)+' | Tenor~'+(nt===Infinity?'∞':nt+' mths')
+          : 'Rate: '+oldRate+'%→'+currentRate+'% | EMI fixed | New Tenor: '+(nt===Infinity?'∞':nt+' mths');
+        schedule.push(makeRow('-', evDate, 'rate-revision', balance, null, 0, balance,
+          0, 0, 0, cumulInt, cumulPrin, balance, currentRate, note));
+      }
+      continue;
+    }
+
+    // ── PROCESS ACCRUAL ──
+    if(next.type === 'accrual'){
+      const accDate = currentAccrualDate;
+
+      // Days from previous accrual point to this month-end
+      // Minimum 1 day (handles disbursement on last day of month)
+      const days = Math.max(1, daysBetween(prevAccrualDate, accDate));
+
+      // Interest on current balance for these days
+      const interest = Math.round(balance * (currentRate/100/365) * days * 100) / 100;
+
+      // Add interest to balance and to pot
+      const balAfterInt = balance + interest;
+      accrualPot += interest;
+      balance = balAfterInt;
+
+      schedule.push(makeRow('-', accDate, 'accrual', balance - interest, days, interest, balAfterInt,
+        0, 0, 0, cumulInt, cumulPrin, balAfterInt, currentRate, ''));
+
+      // Advance accrual cursor to first day of next month
+      prevAccrualDate = accDate;
+      accrualCursor = new Date(accDate.getFullYear(), accDate.getMonth() + 1, 1);
+      currentAccrualDate = nextAccrualDate(accrualCursor);
+      continue;
+    }
+
+    // ── PROCESS EMI ──
+    if(next.type === 'emi'){
+      const emiDate = nextEMIDate;
+
+      // Interest component = everything in the accrualPot
+      const intComp  = Math.round(accrualPot * 100) / 100;
+      const prinComp = currentEMI - intComp;
+      const remainingPrin = balance - intComp; // principal portion of current balance
+
+      if(prinComp >= remainingPrin || remainingPrin <= 0.5){
+        // FINAL EMI
+        const finalPrin = Math.max(0, remainingPrin);
+        const finalEMI  = finalPrin + intComp;
+        cumulInt  += intComp;
+        cumulPrin += finalPrin;
+        emiCount++;
+        schedule.push(makeRow(emiCount, emiDate, 'emi', balance, null, 0, balance,
+          finalEMI, intComp, finalPrin, cumulInt, cumulPrin, 0, currentRate, 'Final EMI'));
+        balance = 0;
+        break;
+      }
+
+      // Normal EMI
+      balance   -= currentEMI;
+      if(balance < 0) balance = 0;
+      cumulInt  += intComp;
+      cumulPrin += prinComp;
+      accrualPot = 0;   // pot cleared — interest paid
+      emiCount++;
+      schedule.push(makeRow(emiCount, emiDate, 'emi', balance + currentEMI, null, 0, balance + currentEMI,
+        currentEMI, intComp, prinComp, cumulInt, cumulPrin, balance, currentRate, ''));
+
+      // Next EMI = emiDay of the following month
+      nextEMIDate = new Date(emiDate.getFullYear(), emiDate.getMonth() + 1, emiDay);
+      continue;
+    }
+  }
+
+  scheduleData = schedule;
+  renderSummary(basePrincipal, cumulInt, cumulPrin, baseEMI, schedule);
+  renderSchedule(schedule);
+  renderLoanInfo(basePrincipal, baseEMI, baseRate, tenor, schedule, cumulInt, cumulPrin);
+  renderEventsTab(schedule);
+
+  document.getElementById('emptyState').style.display  = 'none';
+  document.getElementById('resultsArea').style.display = '';
+  document.getElementById('card-info').style.display   = '';
+  setTimeout(()=>renderCharts(schedule), 100);
+}
+
+
+// ── Row factory ──
+function makeRow(rowNum, date, rowType, openBal, days, intAccrued, balAfterInt,
+                 emi, intComp, prinComp, cumulInt, cumulPrin, closeBal, rate, remarks){
+  return { rowNum, date, rowType, openBal, days, intAccrued, balAfterInt,
+           emi, intComp, prinComp, cumulInt, cumulPrin, closeBal, rate, remarks };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RENDER — SUMMARY CARDS
+// ═══════════════════════════════════════════════════════════════════
+function renderSummary(base, totalInt, totalPrin, emi, schedule){
+  const emiRows = schedule.filter(r=>r.rowType==='emi');
+  const n = emiRows.length;
+  // Total disbursed = sum of all disbursement rows (base + additional)
+  const totalDisbursed = schedule
+    .filter(r=>r.rowType==='disbursement')
+    .reduce((s,r)=>s+(r.closeBal - r.openBal), 0);
+  const pctOfDisbursed = totalDisbursed > 0 ? ((totalInt/totalDisbursed)*100).toFixed(1) : '0.0';
+  document.getElementById('summaryGrid').innerHTML =
+    card('blue',  'Total Disbursed',  fmtINRs(totalDisbursed), 'Base + additional disbursements')+
+    card('purple','Total Interest',   fmtINRs(totalInt),        pctOfDisbursed+'% of total disbursed')+
+    card('green', 'Base EMI',         fmtINRs(emi),             'Per month')+
+    card('orange','Effective Tenor',  n+' <span style="font-size:11px">mos</span>', (n/12).toFixed(1)+' years');
+  document.getElementById('scheduleInfo').textContent =
+    schedule.length+' rows · '+n+' EMIs · Total Outflow: '+fmtINR(totalInt+totalPrin);
+}
+function card(color, label, val, sub){
+  return '<div class="summary-card '+color+'">'+
+    '<div class="summary-label">'+label+'</div>'+
+    '<div class="summary-value">'+val+'</div>'+
+    '<div class="summary-sub">'+sub+'</div></div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RENDER — SCHEDULE TABLE
+// ═══════════════════════════════════════════════════════════════════
+function renderSchedule(schedule){
+  const D = '<td class="dash">–</td>';
+  document.getElementById('scheduleBody').innerHTML = schedule.map(row=>{
+    let rc='', badge='';
+    if(row.rowType==='disbursement'){
+      rc='row-disb';
+      badge='<span class="badge b-disb">💰 '+row.remarks+'</span>';
+    } else if(row.rowType==='accrual'){
+      rc='row-acc';
+      badge='<span class="badge b-acc">📆 Interest Accrual</span>';
+    } else if(row.rowType==='emi'){
+      rc='row-emi';
+      badge = row.remarks==='Final EMI'
+        ? '<span class="badge b-final">✅ Final EMI</span>'
+        : '<span class="badge b-emi">💳 EMI #'+row.rowNum+'</span>';
+    } else if(row.rowType==='rate-revision'){
+      rc='row-rate';
+      badge='<span class="badge b-rate">📈 '+row.remarks+'</span>';
+    } else if(row.rowType==='advance-payment'){
+      rc='row-adv';
+      badge='<span class="badge b-adv">⚡ '+row.remarks+'</span>';
+    }
+
+    const isAcc  = row.rowType==='accrual';
+    const isEMI  = row.rowType==='emi';
+    const isDisb = row.rowType==='disbursement';
+    const isAdv  = row.rowType==='advance-payment';
+
+    return '<tr class="'+rc+'">'+
+      '<td>'+row.rowNum+'</td>'+
+      '<td class="hi">'+fmtDate(row.date)+'</td>'+
+      '<td>'+badge+'</td>'+
+      // Opening Balance
+      '<td class="hi">'+fmtINR(row.openBal)+'</td>'+
+      // Days — accrual only
+      (isAcc ? '<td class="wc">'+row.days+'</td>' : D)+
+      // Interest Accrued — accrual only
+      (isAcc ? '<td class="wc">'+fmtINR(row.intAccrued)+'</td>' : D)+
+      // Bal After Interest — accrual only
+      (isAcc ? '<td class="wc" style="font-style:italic">'+fmtINR(row.balAfterInt)+'</td>' : D)+
+      // EMI / Payment — EMI only
+      (isEMI ? '<td class="hi">'+fmtINR(row.emi)+'</td>' : D)+
+      // Interest Component — EMI only
+      (isEMI ? '<td class="wc">'+fmtINR(row.intComp)+'</td>' : D)+
+      // Principal Component — EMI only
+      (isEMI ? '<td class="ac">'+fmtINR(row.prinComp)+'</td>' : D)+
+      // Cumulative Interest — EMI only
+      (isEMI ? '<td class="cum">'+fmtINR(row.cumulInt)+'</td>' : D)+
+      // Cumulative Principal — EMI only
+      (isEMI ? '<td class="cum">'+fmtINR(row.cumulPrin)+'</td>' : D)+
+      // Closing Balance
+      '<td class="hi">'+fmtINR(row.closeBal)+'</td>'+
+      // Rate
+      '<td>'+row.rate+'%</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RENDER — LOAN INFO PANEL
+// ═══════════════════════════════════════════════════════════════════
+function renderLoanInfo(base, emi, rate, tenor, schedule, cumInt, cumPrin){
+  const emiRows = schedule.filter(r=>r.rowType==='emi');
+  const first   = schedule[0]&&schedule[0].date;
+  const last    = schedule[schedule.length-1]&&schedule[schedule.length-1].date;
+  const rows = [
+    ['Base Principal',   fmtINR(base)],
+    ['Base EMI',         fmtINR(emi)],
+    ['Base Rate',        rate+'% p.a.'],
+    ['Input Tenor',      tenor+' months'],
+    ['Effective Tenor',  emiRows.length+' months'],
+    ['Total Interest',   '<span style="color:var(--warn)">'+fmtINR(cumInt)+'</span>'],
+    ['Total Principal',  '<span style="color:var(--accent)">'+fmtINR(cumPrin)+'</span>'],
+    ['Total Outflow',    fmtINR(cumInt+cumPrin)],
+    ['Start Date',       fmtDate(first)],
+    ['End Date',         fmtDate(last)],
+    ['Disbursements',    schedule.filter(r=>r.rowType==='disbursement').length],
+    ['Rate Revisions',   schedule.filter(r=>r.rowType==='rate-revision').length],
+    ['Advance Payments', schedule.filter(r=>r.rowType==='advance-payment').length],
+  ];
+  document.getElementById('loanInfoBody').innerHTML = rows.map(([k,v])=>
+    '<div class="info-row"><span class="info-key">'+k+'</span><span class="info-val">'+v+'</span></div>'
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RENDER — EVENTS TAB
+// ═══════════════════════════════════════════════════════════════════
+function renderEventsTab(schedule){
+  const disb  = schedule.filter(r=>r.rowType==='disbursement');
+  const rates = schedule.filter(r=>r.rowType==='rate-revision');
+  const adv   = schedule.filter(r=>r.rowType==='advance-payment');
+  if(!disb.length&&!rates.length&&!adv.length){
+    document.getElementById('eventsTabBody').innerHTML=
+      '<div class="empty-state"><div class="empty-icon">📅</div>'+
+      '<div class="empty-title">No Events</div>'+
+      '<div class="empty-desc">No additional disbursements, rate revisions or advance payments were added.</div></div>';
+    return;
+  }
+  let html='';
+  if(disb.length){
+    html+='<div class="card" style="margin-bottom:9px">'+
+      '<div class="card-header"><span>💰</span><span class="card-title">Disbursements</span></div>'+
+      '<div class="card-body"><div class="table-wrap"><table>'+
+      '<thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Details</th><th>Balance After</th></tr></thead><tbody>'+
+      disb.map(r=>
+        '<tr class="row-disb"><td style="text-align:left">'+fmtDate(r.date)+'</td>'+
+        '<td style="text-align:left"><span class="badge b-disb">'+r.remarks+'</span></td>'+
+        '<td class="hi">'+fmtINR(r.closeBal)+'</td></tr>'
+      ).join('')+'</tbody></table></div></div></div>';
+  }
+  if(rates.length){
+    html+='<div class="card" style="margin-bottom:9px">'+
+      '<div class="card-header"><span>📈</span><span class="card-title">Rate Revisions</span></div>'+
+      '<div class="card-body"><div class="table-wrap"><table>'+
+      '<thead><tr><th style="text-align:left">Date</th><th>New Rate</th><th>Outstanding</th><th style="text-align:left">Impact</th></tr></thead><tbody>'+
+      rates.map(r=>
+        '<tr class="row-rate"><td style="text-align:left">'+fmtDate(r.date)+'</td>'+
+        '<td class="wc">'+r.rate+'%</td>'+
+        '<td class="hi">'+fmtINR(r.closeBal)+'</td>'+
+        '<td style="text-align:left"><span class="badge b-rate">'+r.remarks+'</span></td></tr>'
+      ).join('')+'</tbody></table></div></div></div>';
+  }
+  if(adv.length){
+    html+='<div class="card">'+
+      '<div class="card-header"><span>⚡</span><span class="card-title">Advance Payments</span></div>'+
+      '<div class="card-body"><div class="table-wrap"><table>'+
+      '<thead><tr><th style="text-align:left">Date</th><th>Amount</th><th>Balance After</th><th style="text-align:left">Impact</th></tr></thead><tbody>'+
+      adv.map(r=>
+        '<tr class="row-adv"><td style="text-align:left">'+fmtDate(r.date)+'</td>'+
+        '<td class="pos">'+fmtINR(r.prinComp)+'</td>'+
+        '<td class="hi">'+fmtINR(r.closeBal)+'</td>'+
+        '<td style="text-align:left"><span class="badge b-adv">'+r.remarks+'</span></td></tr>'
+      ).join('')+'</tbody></table></div></div></div>';
+  }
+  document.getElementById('eventsTabBody').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RENDER — CHARTS
+// ═══════════════════════════════════════════════════════════════════
+function renderCharts(schedule){
+  const emiRows = schedule.filter(r=>r.rowType==='emi');
+  const step    = Math.ceil(emiRows.length/12);
+  const labels  = emiRows.map((r,i)=>i%step===0?fmtDate(r.date):'');
+  if(chartB) chartB.destroy();
+  if(chartL) chartL.destroy();
+  const gc='#2a3147', tc='#5a6480';
+  chartB = new Chart(document.getElementById('chartBreakdown'),{
+    type:'bar',
+    data:{labels, datasets:[
+      {label:'Principal', data:emiRows.map(r=>+r.prinComp.toFixed(2)), backgroundColor:'rgba(79,142,247,.7)', borderRadius:2},
+      {label:'Interest',  data:emiRows.map(r=>+r.intComp.toFixed(2)),  backgroundColor:'rgba(240,169,83,.7)', borderRadius:2}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:tc,font:{family:'DM Sans',size:11}}}},
+      scales:{
+        x:{stacked:true,grid:{color:gc},ticks:{color:tc,font:{size:10}}},
+        y:{stacked:true,grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>'₹'+Number(v).toLocaleString('en-IN')}}
+      }}
+  });
+  chartL = new Chart(document.getElementById('chartBalance'),{
+    type:'line',
+    data:{labels, datasets:[{
+      label:'Outstanding Balance',
+      data:emiRows.map(r=>+r.closeBal.toFixed(2)),
+      borderColor:'rgba(56,201,160,.9)',backgroundColor:'rgba(56,201,160,.08)',
+      fill:true,tension:.4,pointRadius:0,borderWidth:2
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:tc,font:{family:'DM Sans',size:11}}}},
+      scales:{
+        x:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},
+        y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>'₹'+Number(v).toLocaleString('en-IN')}}
+      }}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(name, el){
+  ['schedule','chart','events'].forEach(t=>
+    document.getElementById('tab-'+t).style.display = t===name?'':'none');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(name==='chart') setTimeout(()=>{chartB&&chartB.update();chartL&&chartL.update();},50);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  EXPORT CSV
+// ═══════════════════════════════════════════════════════════════════
+function exportCSV(){
+  const headers = ['#','Date','Row Type','Opening Balance','Days',
+    'Interest Accrued','Bal After Interest','EMI / Payment',
+    'Interest Component','Principal Component',
+    'Cumul. Interest','Cumul. Principal','Closing Balance','Rate %','Remarks'];
+  const rows = scheduleData.map(r=>[
+    r.rowNum, fmtDate(r.date), r.rowType,
+    r.openBal.toFixed(2),
+    r.days!=null?r.days:'',
+    r.intAccrued.toFixed(2),
+    r.balAfterInt.toFixed(2),
+    r.emi.toFixed(2),
+    r.intComp.toFixed(2),
+    r.prinComp.toFixed(2),
+    r.cumulInt.toFixed(2),
+    r.cumulPrin.toFixed(2),
+    r.closeBal.toFixed(2),
+    r.rate, r.remarks
+  ]);
+  const csv = [headers,...rows].map(r=>r.map(v=>'"'+v+'"').join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  const a   = document.createElement('a');
+  a.href=url; a.download='amortization_schedule.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('modalOverlay').addEventListener('click',function(e){
+  if(e.target===this) closeModal();
+});
+</script>
+</body>
+</html>
